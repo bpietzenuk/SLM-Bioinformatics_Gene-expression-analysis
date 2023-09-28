@@ -3,8 +3,8 @@ This set of reference data and a commenting manual can be used to support the se
 
 1. Differential gene transcriptional analysis between two A. halleri accessions differing in their Cadmium tolerance (based on [Lee et al. 2017](https://onlinelibrary.wiley.com/doi/full/10.1111/tpj.15544))
 * To successfully run this self-learning module please download
-  * [Data](https://ruhr-uni-bochum.sciebo.de/s/TeeDqNyqAjAgJjW))
-  * [Additional software](https://ruhr-uni-bochum.sciebo.de/s/opCaPMoRF3nlvun))
+  * [Data](https://ruhr-uni-bochum.sciebo.de/s/TeeDqNyqAjAgJjW)
+  * [Additional software](https://ruhr-uni-bochum.sciebo.de/s/opCaPMoRF3nlvun)
 * UPDATE expected by November 2023 including:
   * New A. halleri Lan3.1 genome
   * Updated Programs e.g. cutadapt, hisat2, feature_counts etc.
