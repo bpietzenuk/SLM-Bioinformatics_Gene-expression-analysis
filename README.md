@@ -9,4 +9,4 @@ This set of reference data and a commenting manual can be used to support the se
 
 2. Differential gene transcriptional analysis in A. thaliana under ambient and heat stress conditions (based on [Pietzenuk et al. 2017](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1072-3))  
 * CURRENTLY UNDER CONSTRUCTION! COME BACK OCTOBER 13th 2023
-* If you are interested in TE analysis, consider the heat stress data and use the sripts from [COMEX](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-1072-3)
+* If you are interested in TE analysis, consider the heat stress data and use the sripts from [COMEX](https://github.com/bpietzenuk/COMEX)
