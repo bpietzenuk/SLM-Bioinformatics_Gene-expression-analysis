@@ -1,0 +1,415 @@
+---
+title: "DESeq_BioInfoCourse"
+author: "Justin Anderson, Bjoern Pietzenuk and Lara Syllwasschy"
+date: '2018'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+options(tinytex.verbose = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## DESeq2: Differential Gene Expression Analysis
+
+We will now be leveraging your newly formed R skills to analyze the gene count data you generated this week. To help us in the analysis process we will be using a package called DESeq2. A package is a collection of code that is used for a specific analysis. Once the package is loaded we can use it's functions just like we have used the base R functions, e.g. head() and hist(). The DESeq2 package was written in the following paper: Love MI, Huber W and Anders S (2014). "Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2." Genome Biology, 15, pp. 550. doi: 10.1186/s13059-014-0550-8. If you want to learn more about DESeq2 you can visit their vignette page here:  http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#quick-start 
+or
+http://bioconductor.jp/packages/2.14/bioc/vignettes/DESeq2/inst/doc/beginner.pdf
+
+#Loading the DESeq2 package
+```{r}
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("DESeq2")
+
+#First we tell R where online this package can be found:
+install.packages("Rcpp")
+install.packages("BiocManager")
+install.packages("foghorn")
+BiocManager::install("affy")
+#Then we tell R which package at this site we want to download to your computer
+#BiocManager::install(c("DESeq2")) #Yes, you also want to update all the dependencies
+#Lastly, we use the function library to load this package into our working memory. 
+library(DESeq2)
+#A list of packages loaded can be viewed in the Packages tab of the lower right graphics panel.
+#You only need to download each package a single time so if you return to this code later your can skip the "source" and "biocLite" steps above. 
+
+#Install the following packages and then load them into the working memory:
+BiocManager::install("lazyeval")
+BiocManager::install("ggplot2")
+BiocManager::install("affy")  
+
+library(lazyeval)
+library(ggplot2)
+library(affy)
+```
+
+# Load the count files and merge into a single dataframe
+One way to load your count files is with the "Import Dataset" option in the Environment panel. Use the option "From CSV" or "From Text (base)". In the popup window set the 'Separator' or 'Delimiter' option to Tab and uncheck the 'First Row as Names' option because the data does not have a header line. Clicking the Import button will add this file to your Environment. The code to load this file was automatically generated and run in the lower left Console panel. Copy the code that was created in the Console and save it in the following R code section. This way you can return to this code later and run it directly. Repeat for all count files, being sure to name them uniquely. 
+
+I suggest the following dataframe names: 
+  Noss_R1
+  Noss_R2
+  Noss_R3
+  Pais_R1
+  Pais_R2
+  Pais_R3
+
+```{r}
+
+#File loading code here:
+Noss_R1<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Noss_1_count.txt",sep="\t",header=F)
+Noss_R2<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Noss_2_count.txt",sep="\t",header=F)
+Noss_R3<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Noss_3_count.txt",sep="\t",header=F)
+Pais_R1<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Pais_1_count.txt",sep="\t",header=F)
+Pais_R2<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Pais_2_count.txt",sep="\t",header=F)
+Pais_R3<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/Count/Pais_3_count.txt",sep="\t",header=F)
+
+  
+  
+nrow(Pais_R1)
+### Each row is a single gene. How many genes are annotated in the A. halleri genome?
+# Answer: __32553_ genes
+
+#Add column names to match the data
+colnames(Noss_R1)=c("Gene","Counts_Noss_R1")
+colnames(Noss_R2)=c("Gene","Counts_Noss_R2")
+colnames(Noss_R3)=c("Gene","Counts_Noss_R3")
+colnames(Pais_R1)=c("Gene","Counts_Pais_R1")
+colnames(Pais_R2)=c("Gene","Counts_Pais_R2")
+colnames(Pais_R3)=c("Gene","Counts_Pais_R3")
+# Merge the data into a single dataframe
+  # The function merge() combines two dataframes by the specified identical column name.
+Counts=merge(Noss_R1,Noss_R2,by="Gene")
+Counts=merge(Counts,Noss_R3,by="Gene")
+Counts=merge(Counts,Pais_R1,by="Gene")
+Counts=merge(Counts,Pais_R2,by="Gene")
+Counts=merge(Counts,Pais_R3,by="Gene")
+head(Counts)
+
+# Use the summary() function to determine the average number of counts per gene.
+```
+summary(Counts)
+
+# Explore the data
+Before we jump into an analysis of differential expression with DESeq2 let's explore our data using the R techniques we know.
+
+```{r}
+#Time to flex those R muscles! 
+
+# Generate a histogram of the Counts_Noss_R1 column. Log10 transforming the data might prove more informative.
+hist(Counts$Counts_Noss_R1)
+hist(log10(Counts$Counts_Noss_R1))
+
+# Create a scatter plot of Counts_Noss_R1 counts vs Counts_Pais_R1 counts
+plot(Counts$Counts_Noss_R1~Counts$Counts_Pais_R1)
+
+# Sort the  data by Counts_Noss_R1 and see which genes have the highest number of counts in Noss
+Counts_sorted<-Counts[order(Counts$Counts_Noss_R1),]
+tail(Counts_sorted)
+
+# How many genes have zero counts in Counts_Pais_R1? 
+  #Start by creating a dataframe called Zeros as a subset of the count data that only contain individuals with a zero value in the Counts_Pais_R1 column. Then use nrow() to count the number of rows.
+Zeros<-Counts[Counts$Counts_Pais_R1==0,]
+nrow(Zeros)
+
+```
+
+
+# Compare across genes with RPKM
+Scientists often want to compare the expression not only between conditions but between genes. Thus far we have only explored count data which is the number of reads per gene.  If we want to compare between genes and between libraries we need to scale for gene size and for the total number of sequenced reads per library. If one library was sequenced more resulting in twice as many reads in the count results we don't want to falsely assume that all of the genes are expressed higher in that library. Similarly, if a gene's transcript is 1500bp long it could divide into ten 150bp reads equaling a count of 10 for that gene. A longer gene that was 3000bp could have the same number of total transcripts but could divide into twenty 150bp reads of the same length. A simple way to scale for these two issues at the same time is to calculate RPKM. RPKM is the Reads Per Kilobase of gene per Million mapped reads. Nowadays there are also more sophisiticated methods available but RPKM is a good approximation within the limits of this course. We will later use DeSeq2 which employs a more advanced technique.
+
+RPKM=(Counts/gene size in kb)/(number of mapped reads/1 million)
+
+In the next section of R code:
+  1) Load the A. halleri gene annotation data and merge with the counts dataframe generating a new dataframe called "RPKM_df". 
+  2) Calculate the RPKM of all counts adding them to a new column each called e.g. "Noss_R1_RPKM"
+  3) Plot the relationship between gene size and RPKM
+  4) Explore the results
+
+```{r}
+# 1) Load and merge
+    # First load the A. halleri gene annotation data with A. thaliana orthologues (HallerotoThalianaGenes.csv) with the Import Dataset button and copy and paste the code here:
+ 
+Hatoath<-read.table("/Volumes/JARVIS-X/PostDoc/Corona_Björn/Lehre/A-Modul Pflanzenphysiologie (BioInfo)/2020/Tag4_R&DESeq/HalleritoThalianaGenes.csv",sep=",",header=T)
+
+    # Then merge with the Counts dataframe using the column "Gene" 
+  
+RPKM_df = merge(Counts,Hatoath,by="Gene")
+
+# 2) Calculate for all replicates
+  # RPKM=(Counts/(gene size/1000))/(sum mapped reads/1 million)
+  # The function sum() might be helpful here
+RPKM_df$RPKM_Noss_R1=(RPKM_df$Counts_Noss_R1/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Noss_R1)/1000000)
+RPKM_df$RPKM_Noss_R2=(RPKM_df$Counts_Noss_R2/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Noss_R2)/1000000)
+RPKM_df$RPKM_Noss_R3=(RPKM_df$Counts_Noss_R3/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Noss_R3)/1000000)
+RPKM_df$RPKM_Pais_R1=(RPKM_df$Counts_Pais_R1/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Pais_R1)/1000000)
+RPKM_df$RPKM_Pais_R2=(RPKM_df$Counts_Pais_R2/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Pais_R2)/1000000)
+RPKM_df$RPKM_Pais_R3=(RPKM_df$Counts_Pais_R3/(RPKM_df$Gene_size/1000))/(sum(RPKM_df$Counts_Pais_R3)/1000000)
+head(RPKM_df)
+
+
+  # 3) Plot gene size vs RPKM and Counts_Noss_R1 vs RPKM
+
+plot(RPKM_df$Gene_size~RPKM_df$RPKM_Noss_R1)
+plot(RPKM_df$Counts_Noss_R1~RPKM_df$RPKM_Noss_R1)
+
+
+# 4) Explore
+  # What do you see? Is gene size related to expression? 
+
+  # Create a histogram of gene size. Approximately what is the size of the average A. halleri gene?
+hist(RPKM_df$Gene_size)
+
+  # Create a histogram of expression (RPKM) using a log10 transformation of the Noss_R1_RPKM column. 
+hist(log10(RPKM_df$RPKM_Noss_R1))
+ 
+ # What genes have the highest expression (RPKM) for Noss_R1?
+tail(RPKM_df[order(RPKM_df$RPKM_Noss_R1),])
+
+  # What is the largest gene in the annotation? Is it expressed?
+RPKM_df[RPKM_df$Gene_size==max(RPKM_df$Gene_size),]
+
+  # Are the highest expressed genes the same in Noss_R1 and Pais_R1 conditions?
+tail(RPKM_df[order(RPKM_df$RPKM_Pais_R1),])
+
+```
+
+
+# Significantly Different Expression?
+In the following section we create a dataframe with RPKM data already calculated for two genes:g01794 and g04213. We will then plot the expression of each of these genes in our two populations and perform a Two Sample t-test to see if there is a significant difference in the expression. 
+
+```{r}
+# Run the following lines to build a dataframe called RPKM_df2
+Population= c("Noss","Noss","Noss","Pais","Pais","Pais")
+Rep= c("Noss_R1","Noss_R2","Noss_R3","Pais_R1","Pais_R2","Pais_R3")
+g01794= c(10.53482, 19.88798, 19.00557, 12.80166, 13.49514, 16.33977)
+g04213 =c(52.80253, 37.53903, 100.4055, 0.178579, 0.07127946, 0.1240432)
+RPKM_df2=data.frame(Population,Rep, g01794, g04213)
+
+# Run the following lines to plot the expression of g04213 in this data
+stripchart(g04213 ~ Population, vertical = TRUE, data = RPKM_df2, pch = 20, main="g04213", ylab="RPKM", col = "blue", method="jitter", xlim=c(0.5,2.5), ylim=c(.9*min(g04213), 1.1*max(g04213))) 
+text(RPKM_df2$g04213 ~ RPKM_df2$Population, labels=RPKM_df2$Rep)
+
+boxplot(RPKM_df2$g04213 ~ RPKM_df2$Population)
+
+# As you can see, the three repetitions from the plants from Noss express this gene higher than the three repetitions from plants from Pais. 
+
+#Now we want to see if the mean expression between Noss and Pais is significantly different for this gene. In earlier times, a two sample t-test was used for that. 
+
+t.test(RPKM_df2$g04213 ~ RPKM_df2$Population)
+
+#In the output you see the p-value score. This is the probablity of observing this difference in means or a greater difference by chance alone. Traditionally a p-value of less than 0.05 is considered to be a "significant" difference. According to this test the expression is not significantly different. However, the t-test relies on a lot of assumptions, e.g. normal distribution and equal variances. You can ckeck if the variances are equal with the following function:
+
+var.test(RPKM_df2$g04213 ~ RPKM_df2$Population)
+
+#The p-value tells us that the variances are not equal, therefore we can not use the t-test. We will employ DeSeq2 in the next section, which uses the Wald-test, which is able to incorporate differences in variances.
+
+## Now time for g01794
+
+# Run the following lines to plot the expression of g01794 in this data
+stripchart(g01794 ~ Population, vertical = TRUE, data = RPKM_df2, pch = 20,main="g01794", ylab="RPKM", col = "blue", xlim=c(0.5,2.5), method="jitter", ylim=c(.9*min(g01794), 1.1*max(g01794)))
+text(RPKM_df2$g01794 ~ RPKM_df2$Population , labels=RPKM_df2$Rep, adj=1.5)
+
+boxplot(RPKM_df2$g01794 ~ RPKM_df2$Population)
+
+#The plots show that the average expression of this gene is approximatly the same in Noss and Pais.
+
+t.test(RPKM_df2$g01794 ~ RPKM_df2$Population)
+var.test(RPKM_df2$g01794 ~ RPKM_df2$Population)
+
+# The t-test tell us there is not a significant difference between these two conditions for this gene and here the assumption of equal variances is met.
+
+# Expression studies often refer to a "log2 fold change". We can calculate that!
+  # Step 1: Calculate the mean expression for each condition
+g04213_Noss_Mean = mean(RPKM_df2[RPKM_df2$Population=="Noss",]$g04213)
+g04213_Pais_Mean = mean(RPKM_df2[RPKM_df2$Population=="Pais",]$g04213)
+
+  # Step 2: Calculate the ratio of the expression between the two populations
+g04213_Ratio= g04213_Noss_Mean/g04213_Pais_Mean
+g04213_Ratio #This is the "fold change" difference between the expression in these two populations.
+
+  #Step 3: Take the log2 of this ratio to get a "log2fold change"
+log2(g04213_Ratio)
+
+#Result: In Noss we found a 8.99 log2fold change in the expression of g04213.
+
+#Now calculate the same for g01794.
+log2(mean(RPKM_df2[RPKM_df2$Population=="Noss",]$g01794)/mean(RPKM_df2[RPKM_df2$Population=="Pais",]$g01794))
+
+```
+If you like, you can repeat this t-test and log2fold change calculation for the remaining genes. I would not suggest doing it this way. Alternatively, and more acurately, you can use DESeq2 to explore all the genes at the same time and determine which genes are differentially expressed between these two conditions.
+
+
+##Time for DESeq2!
+This week you have heard the term "Differentially Expressed Genes". This is a unique status given to only genes with a significant difference in their expression between the two populations. While the scaled values of an RPKM are excellent for basic summaries of expression, researchers have found that additional calibration is best included in the estimation of differential expression. These adjusments are already baked into the DESeq2 software. We just need to format our data to their specifications.
+
+#Convert the counts dataframe to a count matrix
+The function DESeqDataSetFromMatrix() takes three inputs: countData, coldata, and design
+```{r}
+# The countData is the Counts dataframe we have already been working with.
+
+# The coldata is a dataframe that informs DESeq2 of our experimental design. Run the following two lines to generate the coldata dataframe.
+
+Population = factor(c(rep("Noss", 3), rep("Pais", 3)))
+coldata = data.frame(row.names=colnames(Counts[2:7]), Population)
+
+# Confirm that this new dataframe matches the column names of our count data and is in the same order as the columns.
+coldata
+
+# Lastly is the design. For this experiment we are only interested in exploring the effect of populations and therefore annotate design as ~Population. We then load the data with the function DESeqDataSetFromMatrix() below and assign it the name dds.
+
+dds = DESeqDataSetFromMatrix(countData=Counts, colData=coldata, design = ~Population,  tidy = TRUE, ignoreRank = FALSE)
+dds$Population <- factor(dds$Population, levels = c("Pais","Noss"))
+
+## Check the general properties of the DESeq dataset
+print(dds)
+
+#### Normalization
+# Normalizing for different numbers of aligned reads per library  
+dds.norm <-  estimateSizeFactors(dds)
+sizeFactors(dds.norm)
+
+# Checking the normalization
+par(mfrow=c(2,2),mar=c(2,7,1,0.5),cex.lab=0.7)#set parameters for the plotting window
+epsilon <- 1 # pseudo-count to avoid problems with log(0)
+boxplot(log2(counts(dds.norm)+epsilon),col=dds$Population, cex.axis=0.7, 
+        las=1, xlab="log2(counts+1)", horizontal=TRUE, main="Raw counts")
+boxplot(log2(counts(dds.norm, normalized=TRUE)+epsilon), col=dds$Population,cex.axis=0.7, 
+        las=1, xlab="log2(normalized counts)", horizontal=TRUE, main="Normalized counts") 
+plotDensity(log2(counts(dds.norm)+epsilon), 
+            xlab="log2(counts+1)", col=dds$Population,cex.lab=0.7, panel.first=grid()) 
+plotDensity(log2(counts(dds.norm, normalized=TRUE)+epsilon), 
+            xlab="log2(normalized counts)",col=dds$Population, cex.lab=0.7, panel.first=grid()) 
+
+# Restore default parameters
+par(mfrow=c(1,1), cex.lab=1,mar=c(5.1, 4.1, 4.1, 2.1))
+
+# Performing estimation of dispersion parameter to account for different variances within populations for each gene
+dds.disp <- estimateDispersions(dds.norm, fitType='local')
+
+#### Calculate Differential Expression
+alpha <- 0.05 #significance level for adjusted p-value, default is 0.1
+waldTestResult <- nbinomWaldTest(dds.disp)
+resultDESeq2 <- results(waldTestResult, alpha=alpha, pAdjustMethod="BH")
+
+head(resultDESeq2)
+
+# Instead of normalizing and calculating differential expression stepwise, we can also run DESeq() on our "dds" data set. 
+# Run the DESeq calculation (it might take a couple of minutes)
+dds = DESeq(dds)
+
+```
+
+DESeq2 uses the so-called Benjamini-Hochberg (BH) adjustment; in brief, this method calculates for each gene an adjusted p value which answers the following question: if one called significant all genes with a p value less than or equal to this gene's p value threshold, what would be the fraction of false positives (the false discovery rate, FDR) among them (in the sense of the calculation outlined above). These values, called the BH-adjusted p values, are given in the column padj of the results object. This multiple test correction of the p-value has to be performed when we test multiple hypotheses together, e.g. compare the expression of multiple genes between populations because with more tests the probability of false positives rises.
+
+# Inspecting the results
+
+```{r}
+# Calling the results function extracts the estimated log2Fold Change and p values. 
+
+res = results( dds )
+res
+
+# The results file caries metadata we can view using mcols()
+mcols(res, use.names=TRUE)
+
+```
+
+The DESeq2 Package describes the results table as follows:
+
+The first column, baseMean, is the average of the normalized count values, dividing by size factors, taken over all samples. The remaining four columns refer to a specific contrast, namely the comparison of the levels Pais versus Noss of the factor variable population. The column log2FoldChange is the effect size estimate. It tells us how much the gene's expression seems to have changed due to population differences. This value is reported on a logarithmic scale to base 2: for example, a log2 fold change of 1.5 means that the gene's expression is increased by a multiplicative factor of 2^1.5 = 2.82.
+
+Of course, this estimate has an uncertainty associated with it, which is available in the column lfcSE, the standard error estimate for the log2 fold change estimate. We can also express the uncertainty of a particular effect size estimate as the result of a statistical test. The purpose of a test for differential expression is to test whether the data provides sufficient evidence to conclude that this value is really different from zero. DESeq2 performs for each gene a hypothesis test to see whether evidence is sufficient to decide against the null hypothesis that there is no effect of the population on the gene and that the observed difference between populations was merely caused by experimental variability (i. e., the type of variability that you can just as well expect between different samples in the same population). As usual in statistics, the result of this test is reported as a p value, and it is found in the column pvalue. (Remember that a p value indicates the probability that a fold change as strong as the observed one, or even stronger, would be seen under the situation described by the null hypothesis.)
+
+We note that a subset of the p values in res are NA ("not available""). This is DESeq's way of reporting that all counts for this gene were zero, and hence no test was applied. In addition, p values can be assigned NA if the gene was excluded from analysis because it contained an extreme count outlier. For more information, see the outlier detection section of the advanced vignette.
+
+
+# Sort out significance
+In our case we are interested in first exploring the genes with the most significant change in expression between our two populations while also keeping the fraction of false positives low.
+
+```{r}
+# The function sum() below counts how many genes have an adjusted p value of less than 0.1. Adjust this to only genes with a padj value less than 0.05. This is our number of differentially expressed genes! 
+sum( res$padj < 0.05, na.rm=TRUE )
+
+  #How many differentially expressed genes are in the dataset?
+    #Answer:4217
+
+# We can create a dataframe of only those genes and view that data as follows:
+resSig = res[ which(res$padj < 0.05 ), ]
+View(resSig)
+
+# Sorting this dataframe allows us to look at the genes with the strongest down-regulation
+head( resSig[ order( resSig$log2FoldChange ), ] )
+
+# Or up-regulation
+tail( resSig[ order( resSig$log2FoldChange ), ] )
+
+#Now add the A. halleri gene annotations and the A. thaliana orthologues by merging again. Note that we give names for the "by" parameter here because the columns are named differently between dataframes. "row.names" takes the row names (A. halleri gene identifiers) of the resSig dataframe.
+Res_df = merge(Hatoath,as.data.frame(resSig),by.x="Gene",by.y="row.names")
+
+#Because there is still a large number of genes differentially expressed, for this course we want to focus on the genes that are upregulated in Noss vs. Pais (positive log2 fold change) and take the 6 most significant ones (lowest adjusted p-value) of these.
+Res_NvsP<-Res_df[Res_df$log2FoldChange>0,]
+Res_NvsP_Sig<-head(Res_NvsP[order(Res_NvsP$padj),])
+Res_NvsP_Sig
+#Notice that g04213 now is highly significantly differentially expressed!
+
+# Saving the significant genes
+  # You can use the write.table or write.csv function to save your list of genes as a .txt or .csv file that can then be opened in other programs like excel.
+
+write.csv( Res_df, file="results.csv" )
+
+# or save a file of just your significant genes upregulated in Noss vs. Pais
+write.csv( Res_NvsP_Sig, file="SignificantResults_NossvsPais.csv" )
+
+```
+
+# Diagnostic plots
+Before exploring the list of differentially expressed genes we should run some basic diagnostics. The first is to plot mean expression vs log fold change to show our data's distribution. We want to be sure we don't have a typing error affecting our results. Second is to look at the distribution of p values to ensure they are relatively uniformly distributed. 
+
+```{r}
+# Conveniently, mean expression vs log fold change can be plotted using plotMA(). This plot represents each gene with a dot. The x axis is the average expression over all samples, the y axis the log2 fold change between populations. Genes with an adjusted p value below a threshold (set by alpha) are shown in red. - DESeq2 Beginner Guide
+plotMA( res,alpha =.1, ylim = c(-2, 2) )
+
+hist( res$pvalue, breaks=20, col="grey" )
+```
+
+
+# Gene Clustering
+Sometimes expression changes of only a few genes leads to a strong phenotype. Most often however, phenotypes are polygenic and several differentially expressed genes contribute to an altered phenotype, e.g. the altered metal homeostasis of our two populations. Then it is interesting to look at the expression of several genes together. One common way of presenting expression data from multiple genes is with a heatmap. This next section of R code will walk you through the process of generating a heatmap of the differentially expressed genes. 
+```{r}
+# Start by adding the required packages first. You will need to install them either using biocLite as before or using the Tools drop down menu and clicking "Install Packages...". Then load the packages using library().
+
+#biocLite("genefilter")
+library( "genefilter" )
+#BiocManager::install("gplots")
+library( "gplots" )
+library( "RColorBrewer" )
+
+# Heatmaps are more comparable if the expression data has been transformed. We can transform our data using the function rlog()
+rld = rlog( dds )
+
+# We then generate a heatmap by assaying the rld data based on our adjusted p values. Other factors could also be used to subet the gene list.
+heatmap.2( assay(rld)[ res$padj<0.05 & is.na(res$padj)==FALSE, ], scale="row", trace="none", dendrogram="column", col = colorRampPalette( rev(brewer.pal(9, "RdBu")) )(255), margins = c(8,8), cexRow=.5, cexCol = .7, srtCol=45)
+#In the top left you can see the color key, in the top right the dendrogram and beneath the heatmap.
+
+heatmap.2( assay(rld)[ res$padj<0.05 & is.na(res$padj)==FALSE & res$log2FoldChange>0, ], scale="row", trace="none", dendrogram="column", col = colorRampPalette( rev(brewer.pal(9, "RdBu")) )(255), margins = c(8,8), cexRow=.5, cexCol = .7, srtCol=45)
+
+```
+You have now completed the coding part of this course.
+
+
+# What are these genes known for?
+The next part of this analysis is to explore some of the genes you found to be differentially expressed. Because there is little information on most A. halleri genes, we will work with the A. thaliana orthologues. The two species are closely related, therefore gene function is usually similar and there is a lot more research published on A. thaliana as the model species for plant genetics. The gene names (i.e. AT4G30110) can be searched on the The Arabidopsis Information Resource (TAIR) database website: www.arabidopsis.org. On this website you will find detailed information about the gene's function, biological processes it is involved in, and publications that have helped expand our knowledge about this gene. Do the annotations on this website correspond with the biological expectations? Do any publications give more detail about the known function of these genes? Add the list of top 6 significant genes, their log2fold change, and a basic description of their annotation as a table in a results section.
+
+# Enrichment
+Visualizing a heatmap and looking at the most significant genes answers the question, "What genes are expressed the most differently between these two conditions?" Alternatively, we can ask, "Of the differentially expressed genes, what gene families and biological processes do they come from?" and, "Is this a random sampling of the known gene families and pathways or are specific groups of genes responding?" These types of questions are asking about enrichment. Conveniently, the www.arabidopsis.org website also provides an enrichment tool, although there are a number of alternative tools also available. Ideally you would choose a tool which has a good annotation for your species and phenotype. In our case data for Arabidopsis halleri or thaliana should be available and metal homeostasis and stress related genes should be well annotated. An enrichment analysis exceeds the restrictions of this course, but if you want to you can give it a try at home.
+
+
+## Congratulations! You have just successfully completed an RNA-seq analysis pipeline.
+
+

@@ -1,0 +1,162 @@
+---
+title: "Introduction to R"
+author: "Justin Anderson"
+date: "2017"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Welcome to R!
+'R' is a programming language used for data analysis and statistics. What makes R great is that it is free, widely used, has many resources, works well with large data, and can create neat graphics. Today we are going to learn a little about how to code in R and use it to do the final steps of our RNA-seq analysis. We will be coding in R with the program called "RStudio". 
+
+RStudio has four panels. Here in the upper left is where you will do your editing. The lower left is the "Console" which is like the Unix terminal, you won't need to do any typing down there. In the upper right panel is the "Environment" which displays the data currently loaded into memory. Lastly in the lower left is the graphics area where you will see your plots, loaded packages, and any help screens will appear.
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>. This file type contains sections of text and sections of R code. All the R code will be contained within sections starting with ```{r} and ending with ```. They will be outlined in light gray.  Later when you have filled in the blanks in the R code you can click the **Knit** button and a document will be generated that includes the text content as well as the output of any embedded R code chunks within this document. 
+
+# Intro To R: Variables
+Below is a section of R code. In this section replace '__number__' with a number. Then highlight that line and press "Control + Enter" ("Strg + Enter" on a German keyboard or "Cmd + enter" on a Mac) to run that line in the console.
+
+```{r} 
+#In the next line replace '__number__' with a number, i.e. 5
+x = __number__
+# Run the above line in the console by highlighting it and pressing "Cmd + Enter".
+# Note how a value for x now is listed in the Environment panel in the upper right.
+
+#Now run the next two lines and see how R responds
+x + 2
+x * 10
+
+```
+
+In the above section I have added comments using the hash symbol (#). This symbol tells R to skip anything to the right of this symbol in that line. This way we can add notes and comments for ourselves while still allowing our code to function. Save this file often to ensure any changes you made are not lost. 
+
+
+# Explore the data
+R has a number of built in functions that can be used to summarize data, generate plots, or manipulate data. It even includes some preloaded data we can use to learn some basics. Below we will explore some data in the "cars" data set.
+
+```{r} 
+#Load the "cars" data by running the line below. Notice how it now appears in the upper right Environment panel. The data give the speed of cars and the distances taken to stop. Note that the data were recorded in the 1920s.
+cars=as.data.frame(cars)
+  # The cars file has 50 observations of 2 variables. Think of it like a spreadsheet with two columns and 50 rows. You can view the first five rows using the function "head". 
+head(cars)
+  #You will notice there are two headers (column names) and three numbers per row. The first number is the row number and the second two numbers correspond to the data for the columns.
+
+  # Similarly you can view the last 5 rows using the function "tail".
+tail(##add the data name here##)
+
+  # With a small file like "cars" we can also view the entire file in a new tab with "View".
+View(cars)
+
+# Another very helpful function is "summary".
+summary(cars)
+```
+
+# Plots
+My favorite part of R is its ability to generate graphics. 
+```{r}
+# Run the next line to generate a histogram of the "speed" column. 
+hist(cars$speed, breaks=10)
+
+  # Notice how we highlight the speed column in the cars data using the "$". Now repeat for the "dist" column. Note how color has also been added to this plot.
+hist(cars$__ColumnNameHere__, breaks=10, col = "red")
+
+# Next create a blue scatter plot of the relationship between stopping distance and car speed.
+plot(cars$speed, cars$dist, col="red")   
+
+  # I prefer my points to be an "x" instead of "o". Also I think the color should be green. Note how additional arguments are added to the plotting function separated by commas (,).
+plot(cars$speed, cars$dist, col="green", pch="x")  
+  
+# Do you see a relationship between speed and stopping distance?
+
+``` 
+
+# Getting help
+
+```{r}
+#Sometimes we need help understanding what a function can do. You can ask for help like this:
+?hist
+
+#You can also search functions directly from the Help tab in the lower right graphics panel.
+
+#The code below includes a title and a label for the y axis. Your job is to add a label for the x axis. Explore the help page as needed. If that was too easy, add a sub title.
+plot(cars$speed, cars$dist, col="green", pch="x", main="1920s cars", ylab="Stopping Distance (feet)")  
+
+```
+
+# Sorting and Subsetting
+Exploring the most extreme cases is often something we are interested in as scientists. 
+```{r}
+#Let's sort the cars data to see what were the fastest speeds and how long it took for these fast cars to stop. The distance data and the speed data need to stay together. This spreadsheet style of organizing the data in R is called a dataframe. The following line creates a new dataframe called "CarSpeed" that is a copy of the original "cars" dataframe but ordered by speed.
+CarsSpeed = cars[order(-cars$speed),]
+
+#Use the function head() to see if the new CarsSpeed dataframe was correctly sorted
+
+
+# R is also good for subsetting our data. Below is code to generate two new dataframes. The first is a new dataframe of only cars faster than  20 mph. The second dataframe is only the cars with a stopping distance of exactly 40 feet
+
+Fastcars= cars[cars$speed > 20,] 
+Dist_Forty= cars[cars$dist == 40,]
+
+# In the above two examples the brackets [] are used to manipulate a dataframe and within those brackets we have conditional statements. The first is subseting only the rows of data under the condition that speed is greater than 20. In the second line of data we use a double equals == to indicate a conditional request that only values equal to 40 are retained. You can see these new dataframes in the Environment panel.
+
+# How many cars are faster than 20 mph? Use the function nrow() to print the number of rows in the newly created Fastcars dataframe.
+
+```
+
+# Basic Math and Editing
+You are likely more familiar with speed in kilometers per hour (kph) rather than miles per hour (mph). R allows us to easily create a new column and do the conversion to a speed you are more familiar with.
+
+```{r}
+# We want to add a new column to the "cars" dataframe with the title "speed_kph".
+
+# First we do the math
+    # For reference 1 mile = 1.6 kilometers
+
+# The code below adds a new column to the cars dataframe with the column header as "speed_kph". The values in this column are equal (hence the "=" sign) to the "speed" column times 1.6 which is our conversion factor.
+
+cars$speed_kph = cars$speed * 1.6
+
+# Use the function head() to see how the new column fits into the cars dataframe. 
+
+# It is now a bit confusing to have a column called "speed" and one called "speed_kph". The function colnames() allows us to print a list of the colmn names.
+
+colnames(cars)
+
+# The same function can also be used to view or edit column names. If we want to print just the first column's name we add a bracket after the colnames() function as follows.
+colnames(cars)[1]
+
+# We can then edit a column name by adding new text. R can be fussy with formatting so be sure the name is within the c(). Check to see if the change was successful and correct using head().
+colnames(cars)[1]=c("speed_mph")
+
+
+# Math can also be done with defined variables. Earlier you assigned a value to x. Generate a new column called "distPlusX" which is equal to the distance column plus x. Use the function head() to confirm your addition was correct.
+
+cars$__NewColumnName__ = cars$dist + x
+  
+
+```
+
+
+# Congratulations, you now know some of the basics in R! 
+To generate a nice output of the above work you can click the **Knit** button and a document will be generated that includes both content as well as the output of any embedded R code chunks within this document. Good work! Let's move on to DEseq2. That file, as well as other files you need, can be found here: https://drive.google.com/open?id=1FBfyKNL4WuruEwPPy-QgJgLmpyjWH7xC 
+
+
+
+
+
+# Additional Practice
+If you are ahead of everyone else and are looking for a bit of extra practice feel free to explore the data in "mtcars"
+```{r}
+#attach(mtcars)
+#head(mtcars)
+# Which car has the highest horsepower (hp)?
+# What is the relationship between car weight (wt) and fuel efficiency (mpg)
+
+```
+
+
+If you enjoyed working with R today and want to learn more you can start here: https://www.rstudio.com/online-learning/#R
+A simple web search will also reveal the extensive online resources available to facilitate R learning.
