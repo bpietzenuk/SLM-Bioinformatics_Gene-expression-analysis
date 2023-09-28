@@ -1,0 +1,35 @@
+Exercise1:
+pwd
+mkdir pflaphy_exercises
+cp ../SHARED/* pflaphy_exercises/
+mv pflaphy_exercises/
+ls
+rm I_want_to_be_removed.txt
+ls
+mv I_want_a_new_name.txt HMA4.txt
+Exercise2:
+more HMA4_1.fasta
+more HMA4_2.fasta
+cat HMA4_1.fasta HMA4_2.fasta > HMA4.fasta
+head HMA4_1.fasta
+tail HMA4_1.fasta
+head HMA4_2.fasta
+tail HMA4_2.fasta
+head HMA4.fasta
+tail HMA4.fasta
+nano HMA4.fasta (Halleri to halleri)
+Exercise 3:
+grep ‘Halleri’ HMA4.fasta
+grep ‘halleri’ HMA4.fasta
+sed –i ‘s/sequence/Sequence/g’ HMA4.fasta
+Exercise4:
+ls *.fasta | wc –l
+head –n 1 HMA4.fasta | cut –f 2,3 –d ‘ ‘
+grep –n ‘>’ HMA4.fasta | cut –f 1 –d ‘:‘ > Exercise4.txt
+Exercise5:
+#!/bin/bash
+#Created by Lara Syllwasschy on 20/11/17 to count number of lines and words in file and print lines containing “>”
+wc –l HMA4.fasta | cut –f 1 –d ‘ ‘
+wc –c HMA4.fasta| cut –f 1 –d ‘ ‘
+grep “>” HMA4.fasta
+
